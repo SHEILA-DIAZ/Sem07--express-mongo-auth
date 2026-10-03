@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mi perfil</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    >
+</head>
+
+<body class="grey lighten-4">
+
+    <nav>
+        <div class="nav-wrapper">
+
+            <a href="/dashboard-user" class="brand-logo center">
+                Mi Perfil
+            </a>
+
+            <ul class="right">
+                <li>
+                    <a href="/dashboard-user">Dashboard</a>
+                </li>
+
+                <li>
+                    <a href="#" id="logout">Cerrar sesión</a>
+                </li>
+            </ul>
+
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 40px; margin-bottom: 40px;">
+
+        <div class="card">
+
+            <div class="card-content">
+
+                <span class="card-title">
+                    Mi cuenta 👤
+                </span>
+
+                <form id="profileForm">
+
+                    <div class="row">
+
+                        <div class="input-field col s12 m6">
+                            <input type="text" id="name" required>
+                            <label for="name">Nombre</label>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="text" id="lastName" required>
+                            <label for="lastName">Apellido</label>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="email" id="email" required>
+                            <label for="email">Email</label>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="text" id="phoneNumber" required>
+                            <label for="phoneNumber">Teléfono</label>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="date" id="birthdate" required>
+                            <label class="active" for="birthdate">
+                                Fecha de nacimiento
+                            </label>
+                        </div>
+
+                        <div class="input-field col s12 m6">
+                            <input type="text" id="age" disabled>
+                            <label class="active" for="age">
+                                Edad
+                            </label>
+                        </div>
+
+                        <div class="input-field col s12">
+                            <input type="text" id="url_profile">
+                            <label for="url_profile">
+                                URL de perfil
+                            </label>
+                        </div>
+
+                        <div class="input-field col s12">
+                            <input type="text" id="adress">
+                            <label for="adress">
+                                Dirección
+                            </label>
+                        </div>
+
+                        <div class="col s12">
+                            <p>
+                                <strong>Rol:</strong>
+                                <span id="roles"></span>
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn waves-effect waves-light"
+                    >
+                        Guardar cambios
+                    </button>
+
+                    <div id="message"></div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- JavaScript de Materialize -->
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js">
+    </script>
+
+    <script>
+
+        const token = sessionStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = '/signIn';
+        }
+
+        async function loadProfile() {
+
+            try {
+
+                const response = await fetch('/api/users/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+
+                    sessionStorage.removeItem('token');
+
+                    window.location.href = '/signIn';
+
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('No se pudo cargar el perfil');
+                }
+
+                const user = await response.json();
+
+                document.getElementById('name').value =
+                    user.name || '';
+
+                document.getElementById('lastName').value =
+                    user.lastName || '';
+
+                document.getElementById('email').value =
+                    user.email || '';
+
+                document.getElementById('phoneNumber').value =
+                    user.phoneNumber || '';
+
+                if (user.birthdate) {
+
+                    document.getElementById('birthdate').value =
+                        new Date(user.birthdate)
+                            .toISOString()
+                            .split('T')[0];
+                }
+
+                document.getElementById('age').value =
+                    user.age ?? '';
+
+                document.getElementById('url_profile').value =
+                    user.url_profile || '';
+
+                document.getElementById('adress').value =
+                    user.adress || '';
+
+                document.getElementById('roles').textContent =
+                    user.roles.join(', ');
+
+                M.updateTextFields();
+
+            } catch (error) {
+
+                console.error(error);
+
+                document.getElementById('message').innerHTML = `
+                    <div class="card-panel red lighten-4 red-text text-darken-4">
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+
+        document.getElementById('profileForm').addEventListener(
+            'submit',
+            async (event) => {
+
+                event.preventDefault();
+
+                const data = {
+
+                    name:
+                        document.getElementById('name').value,
+
+                    lastName:
+                        document.getElementById('lastName').value,
+
+                    email:
+                        document.getElementById('email').value,
+
+                    phoneNumber:
+                        document.getElementById('phoneNumber').value,
+
+                    birthdate:
+                        document.getElementById('birthdate').value,
+
+                    url_profile:
+                        document.getElementById('url_profile').value,
+
+                    adress:
+                        document.getElementById('adress').value
+                };
+
+
+                try {
+
+                    const response = await fetch(
+                        '/api/users/me',
+                        {
+
+                            method: 'PUT',
+
+                            headers: {
+
+                                'Content-Type':
+                                    'application/json',
+
+                                'Authorization':
+                                    `Bearer ${token}`
+                            },
+
+                            body: JSON.stringify(data)
+                        }
+                    );
+
+
+                    const result =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            result.message ||
+                            'No se pudieron guardar los cambios'
+                        );
+                    }
+
+
+                    document.getElementById('age').value =
+                        result.age;
+
+
+                    M.updateTextFields();
+
+
+                    document.getElementById('message').innerHTML = `
+                        <div class="card-panel green lighten-4 green-text text-darken-4">
+                            Datos actualizados correctamente.
+                        </div>
+                    `;
+
+
+                } catch (error) {
+
+                    document.getElementById('message').innerHTML = `
+                        <div class="card-panel red lighten-4 red-text text-darken-4">
+                            ${error.message}
+                        </div>
+                    `;
+                }
+
+            }
+        );
+
+
+        document.getElementById('logout').addEventListener(
+            'click',
+            (event) => {
+
+                event.preventDefault();
+
+                sessionStorage.removeItem('token');
+
+                window.location.href = '/signIn';
+            }
+        );
+
+
+        loadProfile();
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard Usuario</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    >
+</head>
+
+<body class="grey lighten-4">
+
+    <nav>
+        <div class="nav-wrapper">
+
+            <a href="#" class="brand-logo center">
+                Mi Dashboard
+            </a>
+
+            <ul class="right">
+
+                <li>
+                    <a href="/profile">
+                        Mi cuenta
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#" id="logout">
+                        Cerrar sesión
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+    </nav>
+
+
+    <div class="container" style="margin-top: 50px;">
+
+        <div class="card">
+
+            <div class="card-content">
+
+                <span class="card-title">
+                    Bienvenido 👋
+                </span>
+
+                <p id="welcomeMessage">
+                    Aquí puedes consultar tus datos y acceder a tu perfil.
+                </p>
+
+                <br>
+
+                <a
+                    href="/profile"
+                    class="btn waves-effect waves-light"
+                >
+                    Ver mi perfil
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        /* =========================
+           OBTENER TOKEN
+        ========================= */
+
+        const token = sessionStorage.getItem('token');
+
+
+        /* =========================
+           SIN TOKEN
+        ========================= */
+
+        if (!token) {
+
+            window.location.href = '/signIn';
+
+        }
+
+
+        /* =========================
+           VALIDAR JWT
+        ========================= */
+
+        async function validateToken() {
+
+            try {
+
+                const response = await fetch('/api/users/me', {
+
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+
+                });
+
+
+                /* TOKEN EXPIRADO O INVÁLIDO */
+
+                if (response.status === 401) {
+
+                    sessionStorage.removeItem('token');
+
+                    window.location.href = '/signIn';
+
+                    return;
+
+                }
+
+
+                /* SIN PERMISOS */
+
+                if (response.status === 403) {
+
+                    window.location.href = '/403';
+
+                    return;
+
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        'No se pudo validar la sesión'
+                    );
+
+                }
+
+
+                const user = await response.json();
+
+
+                /* Mostrar nombre del usuario */
+
+                document.getElementById('welcomeMessage').textContent =
+                    `Bienvenido ${user.name}. Aquí puedes consultar tus datos y acceder a tu perfil.`;
+
+            } catch (error) {
+
+                console.error(error);
+
+                sessionStorage.removeItem('token');
+
+                window.location.href = '/signIn';
+
+            }
+
+        }
+
+
+        /* =========================
+           CERRAR SESIÓN
+        ========================= */
+
+        document
+            .getElementById('logout')
+            .addEventListener(
+                'click',
+                (event) => {
+
+                    event.preventDefault();
+
+                    sessionStorage.removeItem('token');
+
+                    window.location.href = '/signIn';
+
+                }
+            );
+
+
+        /* =========================
+           INICIAR VALIDACIÓN
+        ========================= */
+
+        validateToken();
+
+    </script>
+
+</body>
+</html>
